@@ -1,10 +1,14 @@
 {
   "name": "wildspace-proxy",
-  "type": "module",
   "version": "1.0.0",
+  "description": "Proxy for accessing private Miraheze wiki pages.",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node ./index.js"
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": "18.x"
   },
   "dependencies": {
     "express": "^4.18.2",
