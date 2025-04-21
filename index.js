@@ -9,7 +9,7 @@ const WIKI_USERNAME = "Wildspace-gpt@chatgpt";
 const WIKI_PASSWORD = "m0an9jo5qnqb8059lgmg6eem6gbj0hu7";
 const API_URL = "https://wildspace.miraheze.org/api.php";
 
-// Fake browser headers to bypass Cloudflare
+// Browser-like headers to get past Cloudflare
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36',
   'Accept': 'application/json'
@@ -21,9 +21,16 @@ async function getLoginToken() {
     headers: HEADERS
   });
 
-  const cookie = res.headers.get('set-cookie') || '';
-  const data = await res.json();
-  return { token: data?.query?.tokens?.logintoken, cookie };
+  const raw = await res.text();
+  console.log("🔍 getLoginToken raw response:", raw);
+
+  try {
+    const data = JSON.parse(raw);
+    const cookie = res.headers.get('set-cookie') || '';
+    return { token: data?.query?.tokens?.logintoken, cookie };
+  } catch (e) {
+    throw new Error("Failed to parse login token response");
+  }
 }
 
 async function doLogin(token, cookie) {
@@ -45,8 +52,16 @@ async function doLogin(token, cookie) {
     body: params.toString()
   });
 
-  const loginCookie = res.headers.get('set-cookie') || '';
-  return loginCookie;
+  const raw = await res.text();
+  console.log("🔍 doLogin raw response:", raw);
+
+  try {
+    const loginCookie = res.headers.get('set-cookie') || '';
+    JSON.parse(raw); // just to validate it is actually JSON
+    return loginCookie;
+  } catch (e) {
+    throw new Error("Failed to parse login response");
+  }
 }
 
 async function fetchExtract(title, cookie) {
@@ -60,7 +75,14 @@ async function fetchExtract(title, cookie) {
     }
   });
 
-  return res.json();
+  const raw = await res.text();
+  console.log(`🔍 fetchExtract raw response for "${title}":`, raw);
+
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    throw new Error("Failed to parse extract response");
+  }
 }
 
 app.get('/', (req, res) => {
@@ -76,11 +98,12 @@ app.get('/extract', async (req, res) => {
     const result = await fetchExtract(title, sessionCookie);
     res.json(result);
   } catch (err) {
+    console.error("❌ Proxy error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Wiki Proxy running on port ${PORT}`);
+  console.log(`✅ Wiki Proxy running on port ${PORT}`);
 });
