@@ -9,11 +9,18 @@ const WIKI_USERNAME = "Wildspace-gpt@chatgpt";
 const WIKI_PASSWORD = "m0an9jo5qnqb8059lgmg6eem6gbj0hu7";
 const API_URL = "https://wildspace.miraheze.org/api.php";
 
+// Fake browser headers to bypass Cloudflare
+const HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36',
+  'Accept': 'application/json'
+};
+
 async function getLoginToken() {
   const res = await fetch(`${API_URL}?action=query&meta=tokens&type=login&format=json`, {
     method: 'GET',
-    headers: { 'User-Agent': 'WikiProxy/1.0' }
+    headers: HEADERS
   });
+
   const cookie = res.headers.get('set-cookie') || '';
   const data = await res.json();
   return { token: data?.query?.tokens?.logintoken, cookie };
@@ -31,9 +38,9 @@ async function doLogin(token, cookie) {
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: {
+      ...HEADERS,
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Cookie': cookie,
-      'User-Agent': 'WikiProxy/1.0'
+      'Cookie': cookie
     },
     body: params.toString()
   });
@@ -44,12 +51,15 @@ async function doLogin(token, cookie) {
 
 async function fetchExtract(title, cookie) {
   const url = `${API_URL}?action=query&prop=extracts&explaintext=1&format=json&titles=${encodeURIComponent(title)}`;
+
   const res = await fetch(url, {
+    method: 'GET',
     headers: {
-      'Cookie': cookie,
-      'User-Agent': 'WikiProxy/1.0'
+      ...HEADERS,
+      'Cookie': cookie
     }
   });
+
   return res.json();
 }
 
